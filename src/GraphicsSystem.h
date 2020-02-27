@@ -86,10 +86,11 @@ private:
 	Framebuffer shadow_frame_[MAX_LIGHTS];
 	void renderDepth_(Mesh& comp, const Light& light);
     
-    //gbuffer
-    Shader* gbuffer_shader_ = nullptr;
-    Shader* deferred_shader_ = nullptr;
-    Framebuffer gbuffer_;
+    
+	//gbuffer
+    Shader* gbuffer_shader_ = nullptr; 
+    Shader* deferred_shader_ = nullptr; 
+    Framebuffer gbuffer_; 
     void renderGbuffer();
     
     //cubemap/environment

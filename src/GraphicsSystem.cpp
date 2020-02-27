@@ -51,7 +51,12 @@ void GraphicsSystem::init(int window_width, int window_height, std::string asset
 
 	//shadow map shader
 	depth_shader_ = new Shader("data/shaders/depth.vert", "data/shaders/depth.frag");  
+
+	gbuffer_shader_ = new Shader("data/shaders/gbuffer.vert", "data/shaders/gbuffer.frag");
+
+	gbuffer_.initGbuffer(window_width,window_height);
 	
+	deferred_shader_ = new Shader("data/shaders/deferred.vert", "data/shaders/deferred.frag");
 }
 
 //called after loading everything
@@ -89,19 +94,25 @@ void GraphicsSystem::update(float dt) {
 	/* GBUFFER PASS*/
 
 	//....add here....
+	gbuffer_.bindAndClear();
+	useShader(gbuffer_shader_);
+	for (auto &mesh : ECS.getAllComponents<Mesh>()) {
+		checkMaterial_(mesh);
+		renderMeshComponent_(mesh);
 
+	}
 
     
 	/* SCREEN PASS */
 	bindAndClearScreen_();
     resetShaderAndMaterial_();
-    
-    for (auto &mesh : ECS.getAllComponents<Mesh>()) {
-        //moved checkshader... to outside renderMeshComponent
-        //so the latter can be used for Gbuffer rendering
-        checkShaderAndMaterial_(mesh);
-        renderMeshComponent_(mesh);
-    }
+	renderGbuffer();
+    //for (auto &mesh : ECS.getAllComponents<Mesh>()) {
+    //    //moved checkshader... to outside renderMeshComponent
+    //    //so the latter can be used for Gbuffer rendering
+    //    checkShaderAndMaterial_(mesh);
+    //    renderMeshComponent_(mesh);
+    //}
 	renderEnvironment_();
     
     
@@ -109,16 +120,48 @@ void GraphicsSystem::update(float dt) {
 
 	glDisable(GL_DEPTH_TEST);
     useShader(screen_space_shader_);
-    
+
+    //1---------------------------------------------
 	glViewport(0, 0, GLsizei(viewport_width_ / 4), GLsizei(viewport_height_ / 4));
-	screen_space_shader_->setTexture(U_SCREEN_TEXTURE, shadow_frame_[0].color_textures[0], 0);
+	screen_space_shader_->setTexture(U_SCREEN_TEXTURE, gbuffer_.color_textures[0], 0);
 	geometries_[screen_space_geom_].render();
+	//2---------------------------------------------
+	glViewport(GLsizei(viewport_width_ / 4), 0, GLsizei(viewport_width_ / 4), GLsizei(viewport_height_ / 4));
+	screen_space_shader_->setTexture(U_SCREEN_TEXTURE, gbuffer_.color_textures[1], 0);
+	geometries_[screen_space_geom_].render();
+	//3---------------------------------------------
+	glViewport(GLsizei(viewport_width_ / 2), 0, GLsizei(viewport_width_ / 4), GLsizei(viewport_height_ / 4));
+	screen_space_shader_->setTexture(U_SCREEN_TEXTURE, gbuffer_.color_textures[2], 0);
+	geometries_[screen_space_geom_].render();
+
    
 	glEnable(GL_DEPTH_TEST);
 	glViewport(0, 0, GLsizei(viewport_width_), GLsizei(viewport_height_));
 }
 
 void GraphicsSystem::renderGbuffer() {
+	useShader(deferred_shader_);
+	deferred_shader_->setUniformBlock(U_LIGHTS_UBO,LIGHTS_BINDING_POINT);
+	deferred_shader_->setUniform(U_NUM_LIGHTS,(int)ECS.getAllComponents<Light>().size());
+
+	//upload the uniforms
+	deferred_shader_->setTexture(U_TEX_POSITION,gbuffer_.color_textures[0],8);
+	deferred_shader_->setTexture(U_TEX_NORMAL, gbuffer_.color_textures[1], 9);
+	deferred_shader_->setTexture(U_TEX_ALBEDO, gbuffer_.color_textures[2], 10);
+	deferred_shader_->setUniform(U_CAM_POS,ECS.getComponentInArray<Camera>(ECS.main_camera).position);
+
+	geometries_[screen_space_geom_].render();
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER,gbuffer_.framebuffer);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER,0 );
+	glBlitFramebuffer(0,0,
+						viewport_width_,viewport_height_,
+						0,0,
+			viewport_width_,viewport_height_,
+			GL_DEPTH_BUFFER_BIT,GL_NEAREST);
+
+
+
 
 }
 

@@ -53,7 +53,7 @@ struct Framebuffer {
 	GLuint width, height;
 	GLuint framebuffer = -1;
 	GLuint num_color_attachments = 0;
-	GLuint color_textures[10] = { 0,0,0,0,0,0,0,0,0,0 };
+	GLuint color_textures[10] = { 0,0,0,0,0,0,0,0,0,0 }; //10 color textures -> to 3 color textures
 	void bindAndClear();
 	void initColor(GLsizei width, GLsizei height);
 	void initDepth(GLsizei width, GLsizei height);

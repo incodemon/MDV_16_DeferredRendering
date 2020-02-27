@@ -36,7 +36,7 @@ void Game::init(int w, int h) {
 	int geom_floor = graphics_system_.createGeometryFromFile("data/assets/floor_40x40.obj");
 	int cubemap_geometry = graphics_system_.createGeometryFromFile("data/assets/cubemap.obj");
 	int sphere_geom = graphics_system_.createGeometryFromFile("data/assets/sphere.obj");
-    //int suit_geom = graphics_system_.createGeometryFromFile("data/assets/nanosuit.obj");
+    int suit_geom = graphics_system_.createGeometryFromFile("data/assets/nanosuit.obj");
 
 	/******** ENVIRONMENT **********/
 
@@ -84,12 +84,12 @@ void Game::init(int w, int h) {
 	//phong sphere
 	int sphere_entity = ECS.createEntity("phong_sphere");
 	Transform& st = ECS.getComponentFromEntity<Transform>(sphere_entity);
-	st.translate(1.0f, 6.0f, 5.0f);
+	//st.translate(1.0f, 6.0f, 5.0f);
     //for suit
-	//st.scale(0.5,0.5,0.5);
+	st.scale(0.5,0.5,0.5);
 	//st.translate(0.0,0.1,0.0);
 	Mesh& sphere_mesh = ECS.createComponentForEntity<Mesh>(sphere_entity);
-	sphere_mesh.geometry = sphere_geom;
+	sphere_mesh.geometry = suit_geom;
 	sphere_mesh.material = mat_blue_check_index;
 
 	//create camera
